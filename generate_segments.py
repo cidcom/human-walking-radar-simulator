@@ -724,4 +724,4 @@ def _generate_segments(forward_motion = True, height = 1.8, rv = 3.0, nt = 1024,
     lengths['Upper Arm Length'] = upperarmlen
     lengths['Lower Arm Length'] = lowerarmlen
 
-    return segments, lengths, T
+    return segments, lengths
