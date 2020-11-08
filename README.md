@@ -82,7 +82,7 @@ Please cite this resource when used.
   month        = nov,
   year         = 2020,
   publisher    = {Zenodo},
-  version      = {0.2},
+  version      = {0.1.1},
   doi          = {10.5281/zenodo.4245158},
   url          = {https://doi.org/10.5281/zenodo.4245158}
 }
