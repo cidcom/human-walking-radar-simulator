@@ -73,3 +73,17 @@ basic_conf = OmegaConf.create({
 
 ### Use
 This code is free to use under MIT License.
+
+Please cite this resource when used.
+```latex
+@software{human,
+  author       = {Mikolaj Czerkawski},
+  title        = {{Human Walking Radar Simulator}},
+  month        = nov,
+  year         = 2020,
+  publisher    = {Zenodo},
+  version      = {0.2},
+  doi          = {10.5281/zenodo.4245158},
+  url          = {https://doi.org/10.5281/zenodo.4245158}
+}
+```
