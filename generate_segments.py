@@ -255,7 +255,7 @@ def _generate_segments(forward_motion = True, height = 1.8, rv = 3.0, nt = 1024,
     else:
         x = [x1-1,x2-1,x3-1,x1,x2,x3,x1+1,x2+1,x3+1]
         y = [y1,y2,y3,y1,y2,y3,y1,y2,y3]
-
+        
     int_obj = interp.PchipInterpolator(x, y)
     temp = int_obj(t3) # cubic interpolation of the control points
     flexhip = temp[nt:2*nt]
