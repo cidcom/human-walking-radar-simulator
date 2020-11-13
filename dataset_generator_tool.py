@@ -17,7 +17,7 @@ from .simulate_radar import *
 from .generate_segments import *
 from .example_config import *
 
-def generate(config, n_samples = 64, ddir = 'sample_dataset/', rvs = None, heights = None, squeeze_range = True):
+def generate(config, n_samples = 64, ddir = 'sample_dataset/', rvs = [], heights = [], squeeze_range = True):
     
     forward_motion = config['forward_motion']
     nt = config.simulator['nt']
@@ -25,13 +25,13 @@ def generate(config, n_samples = 64, ddir = 'sample_dataset/', rvs = None, heigh
     radarloc = config.simulator['radarloc']
     rangeres = config.simulator['rangeres']
     lambda_ = config.simulator['lambda_']
-    fs = config['target_sampling_rate']
+    fs = config['fs']
     
     sim_config = config['sim_config']
     
-    if heights == None:
+    if heights == []:
         heights = np.random.uniform(config.simulator['height'][0],config.simulator['height'][1],n_samples)
-    if rvs == None:
+    if rvs == []:
         rvs = np.random.uniform(config.simulator['rv'][0],config.simulator['rv'][1], n_samples)
     
     # create directory
@@ -48,14 +48,14 @@ def generate(config, n_samples = 64, ddir = 'sample_dataset/', rvs = None, heigh
         height = heights[sample_idx]
         rv = rvs[sample_idx]
 
-        seg,segl,T  = generate_segments(forward_motion = forward_motion,
+        seg,segl  = generate_segments(forward_motion = forward_motion,
                                         height = height,
                                         rv = rv,
                                         fs = fs,
                                         duration = config.simulator.duration,
                                         radarloc = radarloc)
 
-        mat = simulate_radar(seg, segl, T, lambda_ = lambda_, rangeres = rangeres, radarloc = radarloc, config = sim_config)
+        mat = simulate_radar(seg, segl, lambda_ = lambda_, rangeres = rangeres, radarloc = radarloc, config = sim_config)
         
         if squeeze_range:
             mat = sum(mat) 
