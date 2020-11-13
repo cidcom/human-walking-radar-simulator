@@ -28,7 +28,7 @@ def get_gait(rv):
     else:
         raise 'Relative velocity must be less than 3'
 
-def generate_segments(forward_motion = True, height = 1.8, rv = 3.0, fs = 100, duration = 10.0, radarloc = (0, 10, 0)):
+def generate_segments(forward_motion = True, height = 1.8, rv = 3.0, gait = '', fs = 100, duration = 10.0, radarloc = (0, 10, 0)):
     """Generates human walking kinematics data based on the input parameters.
 
     Parameters
@@ -82,9 +82,10 @@ def generate_segments(forward_motion = True, height = 1.8, rv = 3.0, fs = 100, d
                               rv = rv,
                               nt = nt,
                               numcyc = numcyc,
-                              radarloc = radarloc)
+                              radarloc = radarloc,
+                              gait = gait)
 
-def _generate_segments(forward_motion = True, height = 1.8, rv = 3.0, nt = 1024, numcyc = 2, radarloc = (0, 10, 0)):
+def _generate_segments(forward_motion = True, height = 1.8, rv = 3.0, nt = 1024, numcyc = 2, radarloc = (0, 10, 0), gait = ''):
     """Internal legacy version of the generate_segments function, more similar to original MATLAB code
 
     Parameters
@@ -106,6 +107,9 @@ def _generate_segments(forward_motion = True, height = 1.8, rv = 3.0, nt = 1024,
     
     radarloc : tuple
         Location of the radar receiver (x, y, z)
+        
+    gait : string
+        Indicates a desired gait, if equal to '' then gait is selected to match velocity (as in original)
 
     Returns
     -------
@@ -148,7 +152,8 @@ def _generate_segments(forward_motion = True, height = 1.8, rv = 3.0, nt = 1024,
     t3 = np.linspace(-1.0, 2.0-dt, nt*3)
 
     # designate gait characteristic - based on Boulic's model
-    gait = get_gait(rv)
+    if gait == '':
+        gait = get_gait(rv)
 
     # Locations of body segments: Appendix A of Boulic's paper
     #      3 translation trajectory coords. give the body segments location
