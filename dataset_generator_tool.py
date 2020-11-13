@@ -15,8 +15,7 @@ import datetime
 
 from .simulate_radar import *
 from .generate_segments import *
-
-from ..conf import *
+from .example_config import *
 
 def generate(config, n_samples = 64, ddir = 'sample_dataset/', squeeze_range = True):
     
@@ -69,7 +68,7 @@ def generate(config, n_samples = 64, ddir = 'sample_dataset/', squeeze_range = T
 
 if __name__ == '__main__':
 
-    config = DatasetConfig
+    config = ExampleConfig
     
     n_samples = 1024
 
