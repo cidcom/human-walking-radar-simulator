@@ -16,6 +16,18 @@ from .radar_helpers import *
 import numpy as np
 import scipy.interpolate as interp
 
+def get_gait(rv):
+    if rv <= 0:
+        raise 'Velocity must be positive'
+    elif rv < 0.5:
+        return 'a'
+    elif rv < 1.3:
+        return 'b'
+    elif rv <= 3:
+        return 'c'
+    else:
+        raise 'Relative velocity must be less than 3'
+
 def generate_segments(forward_motion = True, height = 1.8, rv = 3.0, fs = 100, duration = 10.0, radarloc = (0, 10, 0)):
     """Generates human walking kinematics data based on the input parameters.
 
@@ -136,16 +148,7 @@ def _generate_segments(forward_motion = True, height = 1.8, rv = 3.0, nt = 1024,
     t3 = np.linspace(-1.0, 2.0-dt, nt*3)
 
     # designate gait characteristic - based on Boulic's model
-    if rv <= 0:
-        raise 'Velocity must be positive'
-    elif rv < 0.5:
-        gait = 'a'
-    elif rv < 1.3:
-        gait = 'b'
-    elif rv <= 3:
-        gait = 'c'
-    else:
-        raise 'Relative velocity must be less than 3'
+    gait = get_gait(rv)
 
     # Locations of body segments: Appendix A of Boulic's paper
     #      3 translation trajectory coords. give the body segments location

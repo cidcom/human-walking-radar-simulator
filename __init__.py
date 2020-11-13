@@ -15,3 +15,4 @@ from .radar_helpers import *
 from .simulate_radar import *
 from .generate_segments import *
 from .dataset_generator_tool import *
+from .example_config import *

@@ -17,7 +17,7 @@ from .simulate_radar import *
 from .generate_segments import *
 from .example_config import *
 
-def generate(config, n_samples = 64, ddir = 'sample_dataset/', squeeze_range = True):
+def generate(config, n_samples = 64, ddir = 'sample_dataset/', rvs = None, heights = None, squeeze_range = True):
     
     forward_motion = config['forward_motion']
     nt = config.simulator['nt']
@@ -29,8 +29,10 @@ def generate(config, n_samples = 64, ddir = 'sample_dataset/', squeeze_range = T
     
     sim_config = config['sim_config']
     
-    heights = np.random.uniform(config.simulator['height'][0],config.simulator['height'][1],n_samples)
-    rvs = np.random.uniform(config.simulator['rv'][0],config.simulator['rv'][1], n_samples)
+    if heights == None:
+        heights = np.random.uniform(config.simulator['height'][0],config.simulator['height'][1],n_samples)
+    if rvs == None:
+        rvs = np.random.uniform(config.simulator['rv'][0],config.simulator['rv'][1], n_samples)
     
     # create directory
     if not os.path.exists(ddir):
