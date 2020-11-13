@@ -10,6 +10,7 @@ functions:
 
 import numpy as np
 import os
+import multiprocessing
 from tqdm import tqdm
 import datetime
 import pandas as pd
@@ -18,16 +19,64 @@ from .simulate_radar import *
 from .generate_segments import *
 from .example_config import *
 
+def _single_config_generation(n_samples, offset, heights, rvs, gaits, config_set, cf_idx, ddir = '.', squeeze_range = True):
+    df = pd.DataFrame(None, columns = ['sample_idx','rv', 'height', 'config','radarloc','fs','forward_motion'])
+    
+    config = config_set[cf_idx]
+    fs = config.fs
+    sim_config = config.simulator
+    forward_motion = sim_config.forward_motion
+    duration = sim_config.duration
+    radarloc = sim_config.radarloc
+    lambda_ = sim_config.lambda_
+    rangeres = sim_config.rangeres
+    
+    
+    #print(sim_config.pretty())
+    
+    for sample_idx in range(offset,offset+n_samples):
+        height = heights[sample_idx]
+        rv = rvs[sample_idx]
+        gait = gaits[sample_idx]
+        seg,segl  = generate_segments(forward_motion = forward_motion,
+                                      height = height,
+                                      rv = rv,
+                                      fs = fs,
+                                      gait = gait,
+                                      duration = duration,
+                                      radarloc = radarloc)
+
+        mat = simulate_radar(seg, segl, lambda_ = lambda_, rangeres = rangeres, radarloc = radarloc, config = sim_config.body_parts)
+        
+        if squeeze_range:
+            mat = sum(mat)
+            mu_i = np.mean(abs(mat))
+            mat -= mu_i
+            std_i = np.std(abs(mat))
+            mat /= std_i
+
+        with open(ddir + '/sample' + str(sample_idx+1) + '.npy', 'wb') as f:
+            np.save(f, mat)
+                   
+        df = df.append(pd.DataFrame([[sample_idx+1, rv, height, cf_idx, radarloc, fs, forward_motion]],
+                                    columns=['sample_idx','rv', 'height','config','radarloc','fs','forward_motion']))
+    return df
+
 def generate(config_set, n_samples = 64, ddir = 'sample_dataset/', rvs = [], heights = [], gaits = [], squeeze_range = True):
     
     if type(config_set) == list:
         num_configs = len(config_set)
         
-        # get equal distribution of configs
-        config_idxs = []
+        config_counts = []
+        config_offsets = []
+        total_counts = 0
         for another_config in range(num_configs-1):
-            config_idxs += [another_config for i in range(int(n_samples/num_configs))]
-        config_idxs += [num_configs-1 for i in range(n_samples - len(config_idxs))]
+            config_offsets += [total_counts]
+            new_count = int(n_samples/num_configs)
+            config_counts += [new_count]
+            total_counts += new_count
+        config_counts += [n_samples - total_counts]
+        config_offsets += [total_counts]
         
         # basic parameters from the first config
         config = config_set[0]
@@ -44,16 +93,6 @@ def generate(config_set, n_samples = 64, ddir = 'sample_dataset/', rvs = [], hei
         conf_file.write(config.pretty())
         conf_file.close()
     
-    forward_motion = config['forward_motion']
-    nt = config.simulator['nt']
-    numcyc = config.simulator['numcyc']
-    radarloc = config.simulator['radarloc']
-    rangeres = config.simulator['rangeres']
-    lambda_ = config.simulator['lambda_']
-    fs = config['fs']
-    
-    sim_config = config['sim_config']
-    
     if heights == []:
         heights = np.random.uniform(config.simulator['height'][0],config.simulator['height'][1],n_samples)
     if rvs == []:
@@ -68,38 +107,23 @@ def generate(config_set, n_samples = 64, ddir = 'sample_dataset/', rvs = [], hei
     # pandas dataframe
     df = pd.DataFrame(None, columns = ['sample_idx','rv', 'height', 'config','radarloc','fs','forward_motion'])
     
-    # generate in loop
-    for sample_idx in tqdm(range(n_samples)):
-        height = heights[sample_idx]
-        rv = rvs[sample_idx]
-        gait = gaits[sample_idx]
-        seg,segl  = generate_segments(forward_motion = forward_motion,
-                                      height = height,
-                                      rv = rv,
-                                      fs = fs,
-                                      gait = gait,
-                                      duration = config.simulator.duration,
-                                      radarloc = radarloc)
-        if type(config_set) == list:
-            cf_idx = config_idxs[sample_idx]
-            sim_config = config_set[cf_idx]['sim_config']
-        else:
-            cf_idx = 0
-
-        mat = simulate_radar(seg, segl, lambda_ = lambda_, rangeres = rangeres, radarloc = radarloc, config = sim_config)
-        
-        if squeeze_range:
-            mat = sum(mat) 
-            mu_i = np.mean(abs(mat))
-            mat -= mu_i
-            std_i = np.std(abs(mat))
-            mat /= std_i
-
-        with open(ddir + '/sample' + str(sample_idx+1) + '.npy', 'wb') as f:
-            np.save(f, mat)
-                   
-        df = df.append(pd.DataFrame([[sample_idx+1, rv, height, cf_idx, radarloc, fs, forward_motion]],
-                                    columns=['sample_idx','rv', 'height','config','radarloc','fs','forward_motion']))
+    # generate in pool
+    # (n_samples, offset, heights, rvs, gaits, forward_motion, fs, duration, radarloc, config_set, cf_idx)
+    pool = multiprocessing.Pool()
+    pool_dfs = pool.starmap(_single_config_generation, zip(config_counts,
+                                                           config_offsets,
+                                                           [heights for cf_idx in range(num_configs)],
+                                                           [rvs for cf_idx in range(num_configs)],
+                                                           [gaits for cf_idx in range(num_configs)],
+                                                           [config_set for cf_idx in range(num_configs)],
+                                                           [cf_idx for cf_idx in range(num_configs)],
+                                                           [ddir for cf_idx in range(num_configs)],
+                                                           [squeeze_range for cf_idx in range(num_configs)]
+                                                           ))
+    pool.close()
+    
+    for pool_df in pool_dfs:
+        df = df.append(pool_df)
     df.to_pickle(ddir + "dataframe.pkl")
     
 
