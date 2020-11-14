@@ -32,9 +32,15 @@ def _single_config_generation(n_samples, offset, heights, rvs, gaits, config_set
     rangeres = sim_config.rangeres
     
     
-    #print(sim_config.pretty())
+    if cf_idx == 0:
+        iterable = tqdm(range(offset,offset+n_samples), desc = 'Conf1-Progress')
+    else:
+        iterable = range(offset,offset+n_samples)
     
-    for sample_idx in range(offset,offset+n_samples):
+    for sample_idx in iterable:
+        if os.path.isfile(ddir + '/sample' + str(sample_idx+1) + '.npy'):
+            continue
+        
         height = heights[sample_idx]
         rv = rvs[sample_idx]
         gait = gaits[sample_idx]
@@ -62,8 +68,11 @@ def _single_config_generation(n_samples, offset, heights, rvs, gaits, config_set
                                     columns=['sample_idx','rv', 'height','config','radarloc','fs','forward_motion']))
     return df
 
-def generate(config_set, n_samples = 64, ddir = 'sample_dataset/', rvs = [], heights = [], gaits = [], squeeze_range = True):
-    
+def generate(config_set, n_samples = 64, ddir = 'sample_dataset/', rvs = [], heights = [], gaits = [], squeeze_range = True):        
+    # create directory
+    if not os.path.exists(ddir):
+        os.mkdir(ddir)
+        
     if type(config_set) == list:
         num_configs = len(config_set)
         
@@ -99,10 +108,6 @@ def generate(config_set, n_samples = 64, ddir = 'sample_dataset/', rvs = [], hei
         rvs = np.random.uniform(config.simulator['rv'][0],config.simulator['rv'][1], n_samples)
     if gaits == []:
         gaits = ['' for i in range(n_samples)]
-    
-    # create directory
-    if not os.path.exists(ddir):
-        os.mkdir(ddir)
     
     # pandas dataframe
     df = pd.DataFrame(None, columns = ['sample_idx','rv', 'height', 'config','radarloc','fs','forward_motion'])
