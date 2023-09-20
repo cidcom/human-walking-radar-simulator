@@ -19,10 +19,13 @@ from .simulate_radar import *
 from .generate_segments import *
 from .example_config import *
 
-def _single_config_generation(n_samples, offset, heights, rvs, gaits, config_set, cf_idx, ddir = '.', squeeze_range = True):
+def _single_config_generation(n_samples, offset, heights, rvs, gaits, config_set, cf_idx=None, ddir = '.', squeeze_range = True):
     df = pd.DataFrame(None, columns = ['sample_idx','rv', 'height', 'config','radarloc','fs','forward_motion'])
-    
-    config = config_set[cf_idx]
+
+    if cf_idx is not None:
+        config = config_set[cf_idx]
+    else:
+        config = config_set
     fs = config.fs
     sim_config = config.simulator
     forward_motion = sim_config.forward_motion
@@ -72,7 +75,7 @@ def generate(config_set, n_samples = 64, ddir = 'sample_dataset/', rvs = [], hei
     # create directory
     if not os.path.exists(ddir):
         os.mkdir(ddir)
-        
+
     if type(config_set) == list:
         num_configs = len(config_set)
         
@@ -93,14 +96,16 @@ def generate(config_set, n_samples = 64, ddir = 'sample_dataset/', rvs = [], hei
         # save config
         for cf_idx in range(len(config_set)):
             cf = config_set[cf_idx]
-            conf_file = open(ddir + "dataset_configuration_" + str(cf_idx) + ".txt","w")
-            conf_file.write(cf.pretty())
-            conf_file.close()
+            with open(ddir + "dataset_configuration_" + str(cf_idx) + ".txt","w") as conf_file:
+                OmegaConf.save(config=cf, f=conf_file)
     else:
+        num_configs=1
+        
         config = config_set
-        conf_file = open(ddir + "dataset_configuration.txt","w")
-        conf_file.write(config.pretty())
-        conf_file.close()
+        config_counts=[n_samples]
+        config_offsets=[0]
+        with open(ddir + "dataset_configuration.txt","w") as conf_file:
+            OmegaConf.save(config=config, f=conf_file)
     
     if heights == []:
         heights = np.random.uniform(config.simulator['height'][0],config.simulator['height'][1],n_samples)
@@ -114,18 +119,21 @@ def generate(config_set, n_samples = 64, ddir = 'sample_dataset/', rvs = [], hei
     
     # generate in pool
     # (n_samples, offset, heights, rvs, gaits, forward_motion, fs, duration, radarloc, config_set, cf_idx)
-    pool = multiprocessing.Pool()
-    pool_dfs = pool.starmap(_single_config_generation, zip(config_counts,
-                                                           config_offsets,
-                                                           [heights for cf_idx in range(num_configs)],
-                                                           [rvs for cf_idx in range(num_configs)],
-                                                           [gaits for cf_idx in range(num_configs)],
-                                                           [config_set for cf_idx in range(num_configs)],
-                                                           [cf_idx for cf_idx in range(num_configs)],
-                                                           [ddir for cf_idx in range(num_configs)],
-                                                           [squeeze_range for cf_idx in range(num_configs)]
-                                                           ))
-    pool.close()
+    if num_configs > 1:
+        pool = multiprocessing.Pool()
+        pool_dfs = pool.starmap(_single_config_generation, zip(config_counts,
+                                                               config_offsets,
+                                                               [heights for cf_idx in range(num_configs)],
+                                                               [rvs for cf_idx in range(num_configs)],
+                                                               [gaits for cf_idx in range(num_configs)],
+                                                               [config_set for cf_idx in range(num_configs)],
+                                                               [cf_idx for cf_idx in range(num_configs)],
+                                                               [ddir for cf_idx in range(num_configs)],
+                                                               [squeeze_range for cf_idx in range(num_configs)]
+                                                               ))
+        pool.close()
+    else:
+        pool_dfs=[_single_config_generation(n_samples, 0, heights, rvs, gaits, config, None, ddir, squeeze_range)]
     
     for pool_df in pool_dfs:
         df = df.append(pool_df)

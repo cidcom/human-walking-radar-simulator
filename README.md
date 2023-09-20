@@ -3,6 +3,21 @@
 
 The following code is based on MATLAB scripts by V. Chen for a walking human. The package provides a number of ways radar returns can be simulated.
 
+If you found this useful, please cite the corresponding paper:
+```latex
+@inproceedings{9454986,
+  author={Czerkawski, Mikolaj and Ilioudis, Christos and Clemente, Carmine and Michie, Craig and Andonovic, Ivan and Tachtatzis, Christos},
+  booktitle={2021 IEEE Radar Conference (RadarConf21)}, 
+  title={Interference Motion Removal for Doppler Radar Vital Sign Detection Using Variational Encoder-Decoder Neural Network}, 
+  year={2021},
+  volume={},
+  number={},
+  pages={1-6},
+  doi={10.1109/RadarConf2147009.2021.9454986}}
+
+```
+Available at https://ieeexplore.ieee.org/document/9454986.
+
 ## Direct Calls
 The following call will generate the positional traces for the walking motion for a model moving `forward` at a relative velocity of `1.8`, a sampling rate of `100sps` and for `4` seconds. The radar `(x, y, z)` location will be `(0, 10, 0)`
 ```python
